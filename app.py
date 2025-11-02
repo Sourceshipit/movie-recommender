@@ -1,3 +1,7 @@
+# --------------------------
+# 🎬 Movie Recommender App
+# --------------------------
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -5,10 +9,11 @@ import difflib
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+# 🧩 PAGE CONFIG — must come FIRST
 st.set_page_config(page_title="🎬 Movie Recommender", layout="centered")
 
 # --------------------------
-# 🎬 Load Data
+# 🎥 Load Data (Cached)
 # --------------------------
 @st.cache_data
 def load_data():
@@ -35,7 +40,7 @@ def load_data():
 movies_data, similarity = load_data()
 
 # --------------------------
-# 🎥 Recommend Function
+# 🎯 Recommendation Function
 # --------------------------
 def recommend_movies(movie_name):
     list_of_all_titles = movies_data['title'].tolist()
@@ -43,7 +48,7 @@ def recommend_movies(movie_name):
 
     if not find_close_match:
         st.warning("Sorry, no close match found. Try another movie name!")
-        return []
+        return [], None
 
     close_match = find_close_match[0]
     index_of_the_movie = movies_data[movies_data.title == close_match].index[0]
@@ -51,41 +56,40 @@ def recommend_movies(movie_name):
     sorted_similar_movies = sorted(similarity_score, key=lambda x: x[1], reverse=True)
 
     recommended = []
-    for movie in sorted_similar_movies[1:31]:  # top 30 recommendations
+    for movie in sorted_similar_movies[1:31]:  # skip itself
         index = movie[0]
         title_from_index = movies_data.iloc[index].title
         recommended.append(title_from_index)
+
     return recommended, close_match
 
 # --------------------------
-# 🎨 Streamlit UI
+# 🌟 Streamlit UI
 # --------------------------
-st.set_page_config(page_title="🎬 Movie Recommender", layout="centered")
-
 st.title("🎥 Movie Recommendation System")
-st.write("Get personalized movie suggestions using **content-based filtering**!")
+st.write("Find movies similar to your favorite using **AI-powered content matching**.")
 
-movie_name = st.text_input("Enter your favorite movie:")
+movie_name = st.text_input("Enter your favorite movie name:")
 
 if st.button("Recommend"):
     if movie_name.strip() == "":
         st.warning("Please enter a movie name!")
     else:
-        recommended_movies, match = recommend_movies(movie_name)
-        if recommended_movies:
-            st.success(f"Because you liked **{match}**, you might enjoy:")
-            for i, title in enumerate(recommended_movies, start=1):
+        recommendations, matched = recommend_movies(movie_name)
+        if recommendations:
+            st.success(f"Because you liked **{matched}**, you might also enjoy:")
+            for i, title in enumerate(recommendations, start=1):
                 st.write(f"{i}. {title}")
 
 # --------------------------
-# 🧠 EDA Section (Optional)
+# 📊 Optional: EDA Section
 # --------------------------
-with st.expander("📊 Explore Dataset"):
-    st.write("### Dataset Overview")
+with st.expander("📈 Explore the Dataset"):
+    st.write("### Sample of Dataset")
     st.dataframe(movies_data.head())
 
-    st.write("### Missing Values")
+    st.write("### Missing Values per Column")
     st.write(movies_data.isnull().sum())
 
-    st.write("### Top Genres")
+    st.write("### Top 10 Genres")
     st.bar_chart(movies_data['genres'].value_counts().head(10))
